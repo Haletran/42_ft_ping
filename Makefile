@@ -9,24 +9,21 @@ SRCS := $(shell find $(SRC_DIR) -name "*.c")
 OBJS    := $(addprefix $(OBJS_DIR)/,$(SRCS:.c=.o))
 
 all: $(NAME)
-	echo "Compilation done"
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -o $(NAME) $(OBJS)
-	echo "Compiling\033[1m\033[32m" $@ "\033[0m"
-	echo "\033[42mSuccessfully compiled :)\033[0m"
+	@$(CC) $(CFLAGS) -o $(NAME) $(OBJS)
+	@echo "\033[1m\033[32mCompiling\033[0m" $@
+	@echo "\033[42mSuccessfully compiled :)\033[0m"
 
 $(OBJS_DIR)/%.o: %.c
-	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJS_DIR)
-	echo "Objects removed"
+	@rm -rf $(OBJS_DIR)
 
 fclean: clean
-	rm -f $(NAME)
-	echo "Executable removed"
+	@rm -f $(NAME)
 
 re: fclean all
 
