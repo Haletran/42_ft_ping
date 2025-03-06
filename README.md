@@ -15,6 +15,11 @@ Recreate the ping command in C based on the inetutils-2.0 implementation.
 - [ ] Manage FQDN without doing the DNS resolution in the packet
 
 
+```
+-v, --verbose
+    Verbose output. ICMP packets other than ECHO_RESPONSE that are received are listed.
+```
+
 Here is the output of the original `ping` command:
 
 ```bash
@@ -30,3 +35,47 @@ PING gnu.org (209.51.188.116) 56(84) bytes of data.
 rtt min/avg/max/mdev = 103.695/106.628/110.551/2.884 ms
 $> 
 ```
+
+# DIAGRAM
+
+if the server is reachable :
+ICMP ECHOREQUEST -> INTERNET <- ECHO REPLY REQUEST
+
+if the server is not reachable :
+ICMP ECHOREQUEST -> INTERNET -X- DESTINATION UNREACHABLE (TIMEOUT)
+
+
+## Infos
+
+### Which protocol does the ping command?
+
+The ping command uses ICMP protocol. ICMP protocol allows devices to exchange messages about various network conditions. It contains three types of messages: errors, queries, and responses.
+
+Error messages are used to inform the sender about a condition or cause that prevents the sender's packets from reaching their destination. Query and response messages are used to exchange information about various network conditions.
+
+Query and response messages are always used in pairs where one device sends a query message and another sends a reply or response to the query message. The ping command uses query-response messages.
+
+### What is ICMP?
+
+ICMP (Internet Control Message Protocol) is a network protocol used for sending error messages and operational information about network conditions. It's commonly used for diagnostic and control purposes within IP networks.
+
+
+## How to code the ping command?
+
+Lib:
+- `getopt` to parse the command line arguments
+- `socket` to create a socket
+- `sendto` to send the ICMP packet
+- `recvfrom` to receive the ICMP packet
+- `gettimeofday` to get the current time
+- `getaddrinfo` to get the IP address of a hostname
+- `select` to wait for a response
+- `signal` to handle signals
+
+
+## References
+
+- [Ping command explanation](https://www.computernetworkingnotes.com/networking-tutorials/ping-command-explained-with-examples.html)
+- [What is ICMP](https://www.computernetworkingnotes.com/networking-tutorials/icmp-internet-control-message-protocol.html)
+- [What is Ping video](https://www.youtube.com/watch?v=tVOHTjf94M8)
+- [Making Ping command in ASM](https://www.youtube.com/watch?v=SxtX0VWZuME)
