@@ -9,16 +9,31 @@
 #include <string.h>
 #include <signal.h>
 #include <stdlib.h>
-#define CTRL_C SIGINT
-
+#include <netinet/ip_icmp.h>
+#include <ctype.h>
+#include <netdb.h>
 #include "msg.h"
+
+#define CTRL_C SIGINT
+#define BUFFER_SIZE 1024
+#define ICMP_ECHO 8
+#define IP_LEN 15
+#define PAYLOAD 56
+#define PACKET_SIZE 84
 
 bool run_ping;
 
-struct s_data
+typedef struct s_token
+{
+    int verbose;
+    char *ip;
+} t_token;
+
+typedef struct s_data
 {
     socklen_t sock_len;
     bool vflag;
     int sockfd;
-    char rbuffer[128];
+    char ip_addr[20];
+    char buffer[128];
 } t_data;
