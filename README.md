@@ -5,11 +5,11 @@ Recreate the ping command in C based on the inetutils-2.0 implementation.
 
 ## Instructions 
 
-- [ ] Be realized in a virtual machine running on Debian (>= 7.0)
-- [ ] Use C and submit a Makefile
-- [ ] Authorised to use the libc functions
-- [ ] Executable must be named `ft_ping`
-- [ ] Take as reference the ping implementation from `inetutils-2.0` (ping -V)
+- [x] Be realized in a virtual machine running on Debian (>= 7.0)
+- [x] Use C and submit a Makefile
+- [x] Authorised to use the libc functions
+- [x] Executable must be named `ft_ping`
+- [x] Take as reference the ping implementation from `inetutils-2.0` (ping -V)
 - [ ] Manage the -v -? options
 - [ ] Manage a simple IPv4 (address/hostname) as parameters
 - [ ] Manage FQDN without doing the DNS resolution in the packet
@@ -18,6 +18,9 @@ Recreate the ping command in C based on the inetutils-2.0 implementation.
 ```
 -v, --verbose
     Verbose output. ICMP packets other than ECHO_RESPONSE that are received are listed.
+
+-?, --help
+    Gives this help list
 ```
 
 Here is the output of the original `ping` command:
@@ -36,13 +39,16 @@ rtt min/avg/max/mdev = 103.695/106.628/110.551/2.884 ms
 $> 
 ```
 
-# DIAGRAM
+## DIAGRAM
 
-if the server is reachable :
-ICMP ECHOREQUEST -> INTERNET <- ECHO REPLY REQUEST
+### If the server is reachable:
+  
+   Your Machine  -->  [ICMP Echo Request]  -->  Internet  -->  Target Server
+   Your Machine  <--  [ICMP Echo Reply]    <--  Internet  <--  Target Server
 
-if the server is not reachable :
-ICMP ECHOREQUEST -> INTERNET -X- DESTINATION UNREACHABLE (TIMEOUT)
+### If the server is NOT reachable:
+  
+   Your Machine  -->  [ICMP Echo Request]  -->  Internet  -X->  (Timeout or Destination Unreachable)
 
 
 ## Infos
@@ -62,7 +68,6 @@ ICMP (Internet Control Message Protocol) is a network protocol used for sending 
 
 ## How to code the ping command?
 
-Lib:
 - `getopt` to parse the command line arguments
 - `socket` to create a socket
 - `sendto` to send the ICMP packet
