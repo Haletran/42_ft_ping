@@ -39,18 +39,27 @@ bool get_IP(char **argv, t_token *parse)
     return (false);
 }
 
+int free_all(t_data *data, t_token *parse, int exit_code)
+{
+    if (data)
+        free(data);
+    if (parse)
+        free(parse);
+    return (exit_code);
+}
+
 int main(int argc, char **argv)
 {
     if (argc <= 1)
         return (printf(NO_ARGS), 1);
 
-    int opt;
+    int opt, n;
     t_data *data;
     t_token *parse;
     data = malloc(1000);
     parse = malloc(1000);
     srand(time(NULL));
-    // struct sockaddr_in servaddr;
+    struct sockaddr_in *servaddr;
 
     data->vflag = false;
     data->sock_len = sizeof(struct sockaddr_in);
@@ -68,20 +77,14 @@ int main(int argc, char **argv)
             data->vflag = true;
             break;
         default:
-            free(parse);
-            free(data);
-            exit(1);
+            exit(free_all(data, parse, 1));
         }
     }
 
     signal(CTRL_C, sig_ctrl_c);
 
     if (get_IP(argv, parse) == false)
-    {
-        free(data);
-        free(parse);
-        exit(1);
-    }
+        exit(free_all(data, parse, 1));
 
     reverse_dns_lookup(parse->ip, data);
     printf("PING %s (%s): %d data bytes", parse->ip, data->ip_addr, PAYLOAD);
@@ -91,13 +94,22 @@ int main(int argc, char **argv)
         printf("\n");
 
     data->sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    // add protection if fails
+    if (!data->sockfd)
+        exit(free_all(data, parse, 1));
+
+    //  IP_HDRINCL
+    const int on = 1;
+    char buffer[1024];
+    char recvline[1000];
+    // setsockopt to setup the socket timeout and some other stuff
+    setsockopt(data->sockfd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on));
 
     while (run_ping)
     {
-        // setsockopt to setup the socket timeout and some other stuff
         // sendto to send the ICMP ECHOREQUEST
+        sendto(data->sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *)servaddr, data->sock_len);
         // recvfrom to receive the ECHO REPLY
+        n = recvfrom(data->sockfd, recvline, 1000, 0, 0, NULL);
     }
 
     // Example final print even if the while is stopped:
