@@ -71,13 +71,16 @@ int main(int argc, char **argv)
     icmp->type = ICMP_ECHO;
     icmp->checksum = 0;
 
-    while ((opt = getopt(argc, argv, "v")) != -1)
+    while ((opt = getopt(argc, argv, "v?")) != -1)
     {
         switch (opt)
         {
         case 'v':
             data->vflag = true;
             break;
+        case '?':
+            printf(USAGE_MSG);
+            exit(free_all(data, parse, 0));
         default:
             exit(free_all(data, parse, 1));
         }
@@ -86,7 +89,10 @@ int main(int argc, char **argv)
     signal(CTRL_C, sig_ctrl_c);
 
     if (get_IP(argv, parse) == false)
-        exit(free_all(data, parse, 1));
+    {
+        printf("%s%s", NO_ARGS, HELP_MSG);
+        exit(free_all(data, parse, 0));
+    }
 
     reverse_dns_lookup(parse->ip, data);
     printf("PING %s (%s): %d data bytes", parse->ip, data->ip_addr, PAYLOAD);
@@ -120,6 +126,9 @@ int main(int argc, char **argv)
     // SEND ICMP REQUEST
     while (run_ping)
     {
+
+        // Need to setup the ICMP ECHO REQUEST (buffer)
+
         // sendto to send the ICMP ECHOREQUEST
         sendto(data->sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *)servaddr, data->sock_len);
 
@@ -132,13 +141,14 @@ int main(int argc, char **argv)
             exit(free_all(data, parse, 1));
         sleep(1);
 
-        // PARSE ICMP REQUEST TO PRINT THE RESULT
+        // PARSE ICMP REQUEST TO PRINT THE RESULT and add time for the request
         // Here is the output : 64 bytes from wildebeest1p.gnu.org (209.51.188.116): icmp_seq=1 ttl=54 time=107 ms
     }
 
     // Example final print even if the while is stopped:
     // --- gnu.org ping statistics ---
     // 3 packets transmitted, 0 received, 100% packet loss, time 2032ms
+    free(servaddr);
     free_all(data, parse, 0);
     return (0);
 }
