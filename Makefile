@@ -19,6 +19,12 @@ $(OBJS_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
+get_ping:
+	@wget https://ftpmirror.gnu.org/inetutils/inetutils-2.0.tar.gz -O inetutils-2.0.tar.gz
+	@tar -xvf inetutils-2.0.tar.gz
+	@rm inetutils-2.0.tar.gz
+	@cd inetutils-2.0 && ./configure && make && sudo make install && cd .. && rm -rf inetutils-2.0
+
 clean:
 	@rm -rf $(OBJS_DIR)
 

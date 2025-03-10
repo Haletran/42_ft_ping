@@ -9,8 +9,11 @@
 #include <string.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <time.h>
 #include <netinet/ip_icmp.h>
 #include <ctype.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include "msg.h"
 
@@ -25,6 +28,7 @@ bool run_ping;
 
 typedef struct s_token
 {
+    int id; // The ICMP sequence numbers
     int verbose;
     char *ip;
 } t_token;

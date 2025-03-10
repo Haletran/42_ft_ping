@@ -1,21 +1,9 @@
 #include "includes/ping.h"
-#include <arpa/inet.h>
-#include <netdb.h>
 
 void sig_ctrl_c(int signum)
 {
     (void)signum;
     run_ping = false;
-}
-
-int ft_isdigit(char *ip)
-{
-    for (int i = 0; ip[i]; i++)
-    {
-        if (!isdigit(ip[i]))
-            return (0);
-    }
-    return (1);
 }
 
 void reverse_dns_lookup(char *ip, t_data *data)
@@ -43,6 +31,7 @@ bool get_IP(char **argv, t_token *parse)
         if (argv[i][0] != '-')
         {
             parse->ip = argv[i];
+            parse->id = rand() % (9999 - 1000 + 1);
             return true;
         }
     }
@@ -60,6 +49,7 @@ int main(int argc, char **argv)
     t_token *parse;
     data = malloc(1000);
     parse = malloc(1000);
+    srand(time(NULL));
     // struct sockaddr_in servaddr;
 
     data->vflag = false;
@@ -94,7 +84,11 @@ int main(int argc, char **argv)
     }
 
     reverse_dns_lookup(parse->ip, data);
-    printf("PING %s (%s) %d(%d) bytes of data\n", parse->ip, data->ip_addr, PAYLOAD, PACKET_SIZE);
+    printf("PING %s (%s): %d data bytes", parse->ip, data->ip_addr, PAYLOAD);
+    if (data->vflag == true)
+        printf(", id 0x%x = %d\n", parse->id, parse->id);
+    else
+        printf("\n");
 
     data->sockfd = socket(AF_INET, SOCK_STREAM, 0);
     // add protection if fails
