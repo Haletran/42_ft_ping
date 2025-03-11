@@ -6,7 +6,7 @@
 /*   By: bapasqui <bapasqui@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 09:51:05 by bapasqui          #+#    #+#             */
-/*   Updated: 2025/03/11 13:47:25 by bapasqui         ###   ########.fr       */
+/*   Updated: 2025/03/11 13:49:08 by bapasqui         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,6 @@ int ping_command(Arena *arena, t_data *data)
     
     while(run_ping)
     {
-        gettimeofday(&start, NULL);
         memset(&data->network->pckt, 0, sizeof(data->network->pckt));
         data->network->pckt.hdr.type = ICMP_ECHO;
         data->network->pckt.hdr.code = 0;
@@ -54,6 +53,8 @@ int ping_command(Arena *arena, t_data *data)
         data->network->pckt.hdr.checksum = checksum(&data->network->pckt, sizeof(data->network->pckt));
         
         usleep(COOLDOWN);
+        gettimeofday(&start, NULL);
+
         int m = sendto(data->sockfd, &data->network->pckt, sizeof(data->network->pckt), 0, 
                   (struct sockaddr*)&dest_addr, sizeof(dest_addr));
         if (m <= 0)
