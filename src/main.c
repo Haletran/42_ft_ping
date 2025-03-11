@@ -6,7 +6,7 @@
 /*   By: bapasqui <bapasqui@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 09:51:05 by bapasqui          #+#    #+#             */
-/*   Updated: 2025/03/11 13:49:08 by bapasqui         ###   ########.fr       */
+/*   Updated: 2025/03/11 13:56:25 by bapasqui         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,9 +69,9 @@ int ping_command(Arena *arena, t_data *data)
             perror("Error: ");
             clean_exit(arena);
         }
-        struct icmphdr *recv_hdr = (struct icmphdr *)(rbuffer + 20); // Skip IP header
+        struct icmphdr *recv_hdr = (struct icmphdr *)(rbuffer + 20);
         if (!(recv_hdr->type == 0 && recv_hdr->code == 0)) {
-            perror("Error: ");
+            //printf("Error: 0 bytes from %s\n", data->ip_addr);
         }
         else{
             gettimeofday(&stop, NULL);
