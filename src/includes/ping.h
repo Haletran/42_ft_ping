@@ -6,7 +6,7 @@
 /*   By: bapasqui <bapasqui@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 10:54:39 by bapasqui          #+#    #+#             */
-/*   Updated: 2025/03/11 13:26:22 by bapasqui         ###   ########.fr       */
+/*   Updated: 2025/03/11 13:39:45 by bapasqui         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@
 #define IP_LEN 15
 #define PAYLOAD 64
 #define PACKET_SIZE 84
-#define TTL_VAL 64
+#define TTL_VAL 63
 #define COOLDOWN 1000000
 
 typedef struct ping_pkt {

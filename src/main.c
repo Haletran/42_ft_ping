@@ -6,7 +6,7 @@
 /*   By: bapasqui <bapasqui@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/11 09:51:05 by bapasqui          #+#    #+#             */
-/*   Updated: 2025/03/11 13:31:30 by bapasqui         ###   ########.fr       */
+/*   Updated: 2025/03/11 13:47:25 by bapasqui         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ int ping_command(Arena *arena, t_data *data)
     int i;
     socklen_t addr_len;
     struct sockaddr_in dest_addr;
+    struct timeval stop, start;
     
     memset(&dest_addr, 0, sizeof(dest_addr));
     dest_addr.sin_family = AF_INET;
@@ -39,6 +40,7 @@ int ping_command(Arena *arena, t_data *data)
     
     while(run_ping)
     {
+        gettimeofday(&start, NULL);
         memset(&data->network->pckt, 0, sizeof(data->network->pckt));
         data->network->pckt.hdr.type = ICMP_ECHO;
         data->network->pckt.hdr.code = 0;
@@ -66,12 +68,14 @@ int ping_command(Arena *arena, t_data *data)
             perror("Error: ");
             clean_exit(arena);
         }
-        struct icmphdr *recv_hdr = (struct icmphdr *)rbuffer;
+        struct icmphdr *recv_hdr = (struct icmphdr *)(rbuffer + 20); // Skip IP header
         if (!(recv_hdr->type == 0 && recv_hdr->code == 0)) {
             perror("Error: ");
         }
         else{
-            printf("%d bytes from %s\n", PAYLOAD, data->ip_addr);
+            gettimeofday(&stop, NULL);
+            double elapsed_time = ((stop.tv_sec - start.tv_sec) * 1000.0) + ((stop.tv_usec - start.tv_usec) / 1000.0);
+            printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%f ms\n", PAYLOAD, data->ip_addr, data->msg_count - 1, TTL_VAL, elapsed_time);
             data->msg_received_count++;
         }
     }
@@ -79,6 +83,14 @@ int ping_command(Arena *arena, t_data *data)
     printf("%d packets transmitted, %d packets received\n", data->msg_count, data->msg_received_count);
     return (0);
 }
+
+// PING gnu.org (209.51.188.116): 56 data bytes
+// 64 bytes from 209.51.188.116: icmp_seq=0 ttl=63 time=113.686 ms
+// 64 bytes from 209.51.188.116: icmp_seq=1 ttl=63 time=106.311 ms
+// 64 bytes from 209.51.188.116: icmp_seq=2 ttl=63 time=110.723 ms
+// ^C--- gnu.org ping statistics ---
+// 3 packets transmitted, 3 packets received, 0% packet loss
+// round-trip min/avg/max/stddev = 106.311/110.240/113.686/3.030 ms
 
 int main(int argc, char **argv)
 {
