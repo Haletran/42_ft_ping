@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ping.h                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: bapasqui <bapasqui@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/11 10:54:39 by bapasqui          #+#    #+#             */
+/*   Updated: 2025/03/11 12:22:46 by bapasqui         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #pragma once
 
 #include <stdio.h>
@@ -18,6 +30,7 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <assert.h>
 #include <netinet/ip.h> 
 #include "msg.h"
 
@@ -25,23 +38,50 @@
 #define BUFFER_SIZE 1024
 #define ICMP_ECHO 8
 #define IP_LEN 15
-#define PAYLOAD 56
+#define PAYLOAD 64
 #define PACKET_SIZE 84
+#define TTL_VAL 64
+#define COOLDOWN 1000000
 
-bool run_ping;
+typedef struct ping_pkt {
+    struct icmphdr hdr;
+    char msg[PAYLOAD - sizeof(struct icmphdr)];
+} ping_pkt;
 
-typedef struct s_token
-{
-    int id; // The ICMP sequence numbers
-    int verbose;
-    char *ip;
-} t_token;
+
+typedef struct {
+    size_t capacity;
+    size_t size;
+    uint8_t *data;
+} Arena;
+
+
+typedef struct s_network {
+    struct ping_pkt pckt;
+    struct sockaddr_in *r_addr;
+    struct timeval *tv_out;
+}   t_network;
 
 typedef struct s_data
 {
-    socklen_t sock_len;
     bool vflag;
     int sockfd;
-    char ip_addr[20];
-    char buffer[128];
+    int msg_count;
+    char *ip_addr;
+    char *domain;
+    int msg_received_count;
+    struct s_network *network;
 } t_data;
+
+// ARENA and alloc
+Arena arena_init(size_t capacity);
+void *arena_alloc(Arena *arena, size_t size);
+void *arena_reset(Arena *arena);
+void  *arena_free(Arena *arena);
+void clean_exit(Arena *arena);
+
+// NETWORK utils
+int get_IP(char  **argv, t_data *data);
+int reverse_dns_lookup(char *ip, t_data *data);
+void setup_ping(t_data *data);
+unsigned short checksum(void *b, int len);

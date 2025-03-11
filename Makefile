@@ -1,7 +1,7 @@
 NAME := ft_ping
 
 CC := clang
-CFLAGS := -Wextra -Wall -Werror -g
+CFLAGS := -Wextra -Wall -Werror -gdwarf-2
 
 SRC_DIR := src
 OBJS_DIR := obj

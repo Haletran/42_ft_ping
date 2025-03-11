@@ -8,5 +8,6 @@
         "ip_icmp.h": "c",
         "msg.h": "c",
         "random": "c"
-    }
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/clang"
 }

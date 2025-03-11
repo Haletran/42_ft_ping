@@ -1,4 +1,22 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: bapasqui <bapasqui@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/11 09:51:05 by bapasqui          #+#    #+#             */
+/*   Updated: 2025/03/11 12:24:55 by bapasqui         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "includes/ping.h"
+#include <bits/getopt_core.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+bool run_ping = true;
 
 void sig_ctrl_c(int signum)
 {
@@ -6,48 +24,54 @@ void sig_ctrl_c(int signum)
     run_ping = false;
 }
 
-void reverse_dns_lookup(char *ip, t_data *data)
+
+int ping_command(Arena *arena, t_data *data)
 {
-    (void)data;
-    struct addrinfo hints, *res;
-    char ipstr[INET_ADDRSTRLEN];
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-
-    getaddrinfo(ip, NULL, &hints, &res);
-    struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr;
-    inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof(ipstr));
-
-    strcpy(data->ip_addr, ipstr);
-    freeaddrinfo(res);
-}
-
-bool get_IP(char **argv, t_token *parse)
-{
-    for (int i = 1; argv[i]; i++)
+    char rbuffer[1024];
+    int i;
+    socklen_t addr_len;
+    struct sockaddr_in dest_addr;
+    
+    memset(&dest_addr, 0, sizeof(dest_addr));
+    dest_addr.sin_family = AF_INET;
+    dest_addr.sin_addr.s_addr = inet_addr(data->ip_addr);
+    signal(CTRL_C, sig_ctrl_c);
+    
+    while(run_ping)
     {
-        if (argv[i][0] != '-')
+        memset(&data->network->pckt, 0, sizeof(data->network->pckt));
+        data->network->pckt.hdr.type = ICMP_ECHO;
+        data->network->pckt.hdr.code = 0;
+        data->network->pckt.hdr.un.echo.id = getpid();
+
+        for (i = 0; i < (int)sizeof(data->network->pckt.msg) - 1; i++)
+            data->network->pckt.msg[i] = i + '0';
+
+        data->network->pckt.msg[i] = 0;
+        data->network->pckt.hdr.un.echo.sequence = data->msg_count++;
+        data->network->pckt.hdr.checksum = checksum(&data->network->pckt, sizeof(data->network->pckt));
+        
+        usleep(COOLDOWN);
+
+        int m = sendto(data->sockfd, &data->network->pckt, sizeof(data->network->pckt), 0, 
+                  (struct sockaddr*)&dest_addr, sizeof(dest_addr));
+        if (m <= 0)
         {
-            parse->ip = argv[i];
-            parse->id = rand() % (9999 - 1000 + 1); // not really what i should do but ok for now
-            return true;
+            perror("Error: ");
+            clean_exit(arena);
         }
+        
+        addr_len = sizeof(*data->network->r_addr);
+        int n = recvfrom(data->sockfd, rbuffer, sizeof(rbuffer), 0, (struct sockaddr*)& data->network->r_addr, &addr_len);
+        if (n <= 0 && data->msg_count > 1)
+        {
+            perror("Error: ");
+            clean_exit(arena);
+        }
+        printf("%d bytes from %s\n", PAYLOAD, data->ip_addr);
+        data->msg_received_count++;
     }
-
-    return (false);
-}
-
-int free_all(t_data *data, t_token *parse, int exit_code)
-{
-    if (exit_code == 1)
-        perror("Error: ");
-    if (data)
-        free(data);
-    if (parse)
-        free(parse);
-    return (exit_code);
+    return (0);
 }
 
 int main(int argc, char **argv)
@@ -55,100 +79,45 @@ int main(int argc, char **argv)
     if (argc <= 1)
         return (printf(NO_ARGS), 1);
 
-    int opt, n;
-    t_data *data;
-    t_token *parse;
-    data = malloc(1000);
-    parse = malloc(1000);
-    srand(time(NULL));
-    struct sockaddr_in *servaddr = malloc(1000);
+    Arena arena = arena_init(1024);
+    t_data *data = arena_alloc(&arena, sizeof(t_data));
+    int opt;
 
-    data->vflag = false;
-    data->sock_len = sizeof(struct sockaddr_in);
-    run_ping = true;
-
-    struct icmphdr *icmp = (struct icmphdr *)data->buffer;
-    icmp->type = ICMP_ECHO;
-    icmp->checksum = 0;
-
+    
+    data->network = arena_alloc(&arena, sizeof(struct s_network *));
+    data->network->tv_out = arena_alloc(&arena, sizeof(struct timeval *));
+    data->network->r_addr = arena_alloc(&arena, sizeof(struct sockaddr_in *));
+    data->ip_addr = arena_alloc(&arena, sizeof(struct sockaddr_in));
+    
     while ((opt = getopt(argc, argv, "v?")) != -1)
     {
         switch (opt)
         {
-        case 'v':
-            data->vflag = true;
-            break;
-        case '?':
-            printf(USAGE_MSG);
-            exit(free_all(data, parse, 0));
-        default:
-            exit(free_all(data, parse, 1));
+            case 'v':
+                if (argc < 3)
+                    clean_exit(&arena);
+                data->vflag = true;
+                break;
+            case '?':
+                printf(USAGE_MSG);
+            default:
+               clean_exit(&arena);
         }
     }
-
-    signal(CTRL_C, sig_ctrl_c);
-
-    if (get_IP(argv, parse) == false)
-    {
-        printf("%s%s", NO_ARGS, HELP_MSG);
-        exit(free_all(data, parse, 0));
-    }
-
-    reverse_dns_lookup(parse->ip, data);
-    printf("PING %s (%s): %d data bytes", parse->ip, data->ip_addr, PAYLOAD);
-    if (data->vflag == true)
-        printf(", id 0x%x = %d\n", parse->id, parse->id);
-    else
-        printf("\n");
-
+    if (get_IP(argv, data))
+        clean_exit(&arena);
+    if (reverse_dns_lookup(data->domain, data) == 1)
+        clean_exit(&arena);
+    
     data->sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (!data->sockfd)
-        exit(free_all(data, parse, 1));
-
-    const int on = 1;
-    char buffer[1024];
-    char recvline[1000];
-
-    memset(servaddr, 0, sizeof(struct sockaddr_in));
-    servaddr->sin_family = AF_INET;
-    servaddr->sin_addr.s_addr = inet_addr(parse->ip);
-
-    // setsockopt to setup the socket timeout and some other stuff
-    setsockopt(data->sockfd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on));
-    bzero(buffer, sizeof(buffer));
-
-    // setup struct of recv so that i can access to request
-    struct sockaddr_in recv_addr;
-    memset(&recv_addr, 0, sizeof(recv_addr));
-    socklen_t recv_len = sizeof(recv_addr);
-    recv_addr.sin_addr.s_addr = inet_addr(parse->ip);
-
-    // SEND ICMP REQUEST
-    while (run_ping)
+    if (data->sockfd < 0)
     {
-
-        // Need to setup the ICMP ECHO REQUEST (buffer)
-
-        // sendto to send the ICMP ECHOREQUEST
-        sendto(data->sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *)servaddr, data->sock_len);
-
-        // recvfrom to receive the ECHO REPLY
-        n = recvfrom(data->sockfd, recvline, sizeof(recvline), 0,
-                     (struct sockaddr *)&recv_addr, &recv_len);
-
-        printf("%d bytes from %s: \n", n, inet_ntoa(recv_addr.sin_addr));
-        if (n < 0)
-            exit(free_all(data, parse, 1));
-        sleep(1);
-
-        // PARSE ICMP REQUEST TO PRINT THE RESULT and add time for the request
-        // Here is the output : 64 bytes from wildebeest1p.gnu.org (209.51.188.116): icmp_seq=1 ttl=54 time=107 ms
+        perror("Error: ");
+        clean_exit(&arena);
     }
-
-    // Example final print even if the while is stopped:
-    // --- gnu.org ping statistics ---
-    // 3 packets transmitted, 0 received, 100% packet loss, time 2032ms
-    free(servaddr);
-    free_all(data, parse, 0);
+    
+    setup_ping(data);
+    ping_command(&arena,  data);
+    arena_free(&arena);
     return (0);
 }
